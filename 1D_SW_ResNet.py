@@ -3,17 +3,11 @@ import time
 start_time = time.time()
 
 # %%
-import tensorflow as tf
-
-# Check if TensorFlow is using the GPU
-print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
-
-
-# %%
 import numpy as np
 import os
 import scipy.io
 from tensorflow.keras.utils import to_categorical
+import tensorflow as tf
 from tensorflow.keras.callbacks import Callback
 from sklearn.model_selection import train_test_split
 from tensorflow.keras.models import Sequential
@@ -59,10 +53,6 @@ def reconstruct_signal_and_descriptor(signal_windows, descriptor_windows, indice
     for signal_window, descriptor, idx in zip(signal_windows, descriptor_windows, indices):
         start_idx = int(idx) - half_window
         end_idx = int(idx) + half_window + 1
-#         print(f'start_idx: {start_idx}')
-#         print(f'end_idx: {end_idx}')
-#         print(f'signal_window.shape: {signal_window.shape}')
-#         print(f'reconstructed_signal.shape: {reconstructed_signal.shape}')
         reconstructed_signal[start_idx:end_idx] += signal_window
         reconstructed_descriptor[int(idx)] += descriptor
         signal_count[start_idx:end_idx] += 1
@@ -79,7 +69,7 @@ def reconstruct_signal_and_descriptor(signal_windows, descriptor_windows, indice
     return reconstructed_signal, reconstructed_descriptor
 
 # %%
-mat = scipy.io.loadmat('dataset_all_filtered_m.mat')
+mat = scipy.io.loadmat('***.mat')  # Datasets have been made publicly available.
 
 dataset = mat['dataset']
 
@@ -138,39 +128,6 @@ descriptor_windows = to_categorical(descriptor_windows, num_classes=9)
 signals_train, signals_test, descriptors_train, descriptors_test = train_test_split(signal_windows, 
                                                                                     descriptor_windows, test_size=0.2)
 
-
-# signals_train, signals_test, descriptors_train, descriptors_test = train_test_split(signal_windows, 
-#                                                                                     descriptor_windows, test_size=0.2)
-
-# %%
-# # Reconstruct the original signal and descriptor
-# reconstructed_signals = np.empty([len(org_signals),
-#                            org_signals.shape[1]])
-                                  
-# reconstructed_descriptors = np.empty([len(org_signals),
-#                            org_signals.shape[1]])
-
-# for i in range(len(org_signals)):     
-#         reconstructed_signals[i,:], reconstructed_descriptors[i,:] = reconstruct_signal_and_descriptor(signal_windows[i,: ,:], descriptor_windows[i,:], indices[i, :],  len(org_signals[0]))
-
-# %%
-# # Compare original and reconstructed signals and descriptors
-
-# sample_index = 0
-
-# plt.figure(figsize=(12, 6))
-# plt.subplot(2, 1, 1)
-# plt.plot(org_signals[sample_index,:], label='Original Signal')
-# plt.plot(reconstructed_signals[sample_index,:], label='Reconstructed Signal', linestyle='--')
-# plt.legend()
-
-# plt.subplot(2, 1, 2)
-# plt.plot(org_descriptors[sample_index,:], label='Original Descriptor')
-# plt.plot(reconstructed_descriptors[sample_index,:], label='Reconstructed Descriptor', linestyle='--')
-# plt.legend()
-
-# plt.show()
-
 # %%
 # Scale signals to be within -1 and 1
 scaler = MinMaxScaler(feature_range=(-1, 1))
@@ -197,19 +154,8 @@ descriptors_test_flat = np.concatenate(descriptors_test)
 signals_train_flat = signals_train_flat[..., np.newaxis]
 signals_test_flat = signals_test_flat[..., np.newaxis]
 
-# %%
-# print('3 Conv1D layers, 2 Conv1DTranspose layer, Lr = 0.00005, more filters and neurons')
+# ResNet's architecture: 
 
-# %%
-def squeeze_excite_block(input, ratio=16):
-    """ Create a channel-wise squeeze-excite block """
-    filters = input.shape[-1]
-    se = GlobalAveragePooling1D()(input)
-    se = Reshape((1, filters))(se)
-    se = Dense(filters // ratio, activation='relu', kernel_initializer='he_normal', use_bias=False)(se)
-    se = Dense(filters, activation='sigmoid', kernel_initializer='he_normal', use_bias=False)(se)
-    x = multiply([input, se])
-    return x
 # %%
 def residual_block(x, filters, kernel_size=3):
     shortcut = x
@@ -221,15 +167,11 @@ def residual_block(x, filters, kernel_size=3):
     x = Add()([x, shortcut])
     x = Activation('relu')(x)
     return x
-# %%
-print('******************* RESNET ******************')
 
 # %%
 input_tensor = Input(shape=(window_size, 1))
 x = Conv1D(80, kernel_size=7, padding='same', activation='relu')(input_tensor)
 x = MaxPooling1D(pool_size=2, padding='same')(x)
-
-# Add an additional Conv1D layer here
 x = Conv1D(80, kernel_size=3, padding='same', activation='relu')(x)
 
 # Add residual blocks
@@ -258,13 +200,13 @@ elapsed_time = elapsed_time/60
 print(f"Elapsed Time: {elapsed_time:.2f} minutes")
 
 # %%
-# Predict descriptors using the trained model
+# Predict the descriptors using the trained model
 predicted_descriptors = model.predict(signals_test_flat)
 
 # %%
 descriptor_test_shape = descriptors_test.shape[:-1]
 
-# Convert predicted descriptors from one-hot encoded format to original class labels
+# Convert the predicted descriptors from one-hot encoded format to original class labels
 predicted_descriptors_labels = np.argmax(predicted_descriptors, axis=1)
 
 # %%
@@ -335,8 +277,8 @@ for sample_index in range(30):
 # %%
 
 # Define the folder and file name
-folder_name = 'filtered_m_data'
-file_name = 'filtered_m.mat'
+folder_name = 'data'
+file_name = 'data.mat'
 file_path = os.path.join(folder_name, file_name)
 
 # Create the directory if it doesn't exist
