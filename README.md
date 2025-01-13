@@ -6,4 +6,4 @@ To gain a better understanding of the code, please consult the paper.
 
 In this repository, the Python script containing the ResNet model outlined in the paper is provided for reproducibility.
 
-If you have any issues with the codes or questions, please contact me at mohammadshedayati@gmail.com or hedayat2@uwindsor.ca
+If you have any questions or issues with the codes, please contact me at mohammadshedayati@gmail.com or hedayat2@uwindsor.ca
